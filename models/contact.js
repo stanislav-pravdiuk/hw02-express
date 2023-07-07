@@ -48,6 +48,3 @@ module.exports = {
     Contact,
     schemas
 };
-// module.exports = {
-//     addSchema,
-// }; 

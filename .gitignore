@@ -1,6 +1,6 @@
 node_modules/
 config.js
-env
-env.local
+.env
+.env.local
 .idea
 .vscode
