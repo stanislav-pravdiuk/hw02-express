@@ -2,6 +2,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const gravatar = require("gravatar");
 const path = require('path');
+const jimp = require('jimp');
 const { SECRET_KEY } = process.env;
 const { User } = require("../models/user");
 const {
@@ -72,7 +73,12 @@ const updateAvatar = async (req, res) => {
     const filename = `${_id}_${originalname}`;
     const resultUpload = path.join(avatarsDir, filename);
     await fs.rename(tempUpload, resultUpload);
-    const avatarURL = path.join('avatars', filename);
+    const image = await jimp.read(resultUpload);
+    await image.resize(250, 250);
+    const resizedFilename = `resized_${filename}`;
+    const resizedPath = path.join(avatarsDir, resizedFilename);
+    await image.writeAsync(resizedPath);
+    const avatarURL = path.join('avatars', resizedFilename);
     await User.findByIdAndUpdate(_id, { avatarURL });
     res.json({
         avatarURL
