@@ -5,7 +5,10 @@ const {
 } = require('../helpers');
 
 async function getAll(req, res) {
-        const result = await Contact.find({}, "-cratedAt -updatedAt");
+        const { _id: owner } = req.user;
+        const { page = 1, limit = 20 } = req.query;
+        const skip = (page - 1) * limit;
+        const result = await Contact.find({owner}, "-cratedAt -updatedAt", {skip, limit}).populate('owner', 'email subscription');
         res.json(result);
 };
 
@@ -20,7 +23,8 @@ async function getById(req, res){
 };
 
 async function add(req, res) {
-        const result = await Contact.create(req.body);
+        const { _id: owner } = req.user;
+        const result = await Contact.create({ ...req.body, owner });
         res.status(201).json(result);
 };
 
