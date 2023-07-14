@@ -1,11 +1,17 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const gravatar = require("gravatar");
+const path = require('path');
+const jimp = require('jimp');
 const { SECRET_KEY } = process.env;
 const { User } = require("../models/user");
 const {
         HttpError,
         CtrlWrapper
 } = require('../helpers');
+// const { promises } = require('dns');
+const avatarsDir = path.join(__dirname, '../', 'public', 'avatars');
+const fs = require('fs/promises');
 
 const register = async (req, res) => { 
     const { email, password } = req.body;
@@ -14,7 +20,8 @@ const register = async (req, res) => {
         throw HttpError(409, 'Email in use')
     }
     const hashPassword = await bcrypt.hash(password, 10);
-    const newUser = await User.create({...req.body, password: hashPassword});
+    const avatarURL = gravatar.url(email);
+    const newUser = await User.create({...req.body, password: hashPassword, avatarURL});
     res.status(201).json({
         email: newUser.email,
         subscription: newUser.subscription,
@@ -60,9 +67,28 @@ const getCurrent = async (req, res) => {
     });
 };
 
+const updateAvatar = async (req, res) => {
+    const{_id} = req.user;
+    const { path: tempUpload, originalname } = req.file;
+    const filename = `${_id}_${originalname}`;
+    const resultUpload = path.join(avatarsDir, filename);
+    await fs.rename(tempUpload, resultUpload);
+    const image = await jimp.read(resultUpload);
+    await image.resize(250, 250);
+    const resizedFilename = `resized_${filename}`;
+    const resizedPath = path.join(avatarsDir, resizedFilename);
+    await image.writeAsync(resizedPath);
+    const avatarURL = path.join('avatars', resizedFilename);
+    await User.findByIdAndUpdate(_id, { avatarURL });
+    res.json({
+        avatarURL
+    });
+};
+
 module.exports = {
     register: CtrlWrapper(register),
     login: CtrlWrapper(login),
     getCurrent: CtrlWrapper(getCurrent),
-    logout: CtrlWrapper(logout)
+    logout: CtrlWrapper(logout),
+    updateAvatar: CtrlWrapper(updateAvatar)
 };
